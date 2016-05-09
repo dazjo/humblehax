@@ -1,0 +1,14 @@
+# Object files
+build/
+constants/
+*.o
+*.ko
+*.obj
+*.elf
+output.map
+*.bin
+*.xml
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
