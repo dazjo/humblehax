@@ -146,7 +146,7 @@ Result payload_update(u8* firmware_version)
     ret = gspwn((void*)(COE_CODE_LINEAR_BASE + PAYLOAD_VA - 0x00100000), buffer, (size + 0x1f) & ~0x1f);
     svcSleepThread(300*1000*1000);
 
-    FS_Archive save_archive = (FS_Archive){ARCHIVE_SAVEDATA, (FS_Path){PATH_EMPTY, 1, (u8*)""}};
+    FS_ArchiveStruct save_archive = (FS_ArchiveStruct){ARCHIVE_SAVEDATA, (FS_Path){PATH_EMPTY, 1, (u8*)""}};
     ret = _FSUSER_OpenArchive(fsHandle, &save_archive);
     if(ret) return ret;
 
@@ -373,7 +373,7 @@ updateFail:
 
                     centerString(top_framebuffer, "Clearing savegame...", 40, 400);
 
-                    FS_Archive save_archive = (FS_Archive){ARCHIVE_SAVEDATA, (FS_Path){PATH_EMPTY, 1, (u8*)""}};
+                    FS_ArchiveStruct save_archive = (FS_ArchiveStruct){ARCHIVE_SAVEDATA, (FS_Path){PATH_EMPTY, 1, (u8*)""}};
                     ret = _FSUSER_FormatSaveData(fsHandle, save_archive.id, save_archive.lowPath, 512, 1, 64, 3, 67, true);
                     hex2str(buf, ret);
 

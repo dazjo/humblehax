@@ -4,7 +4,7 @@
 #include <3ds.h>
 
 #include "../../constants/constants.h"
-#define LINEAR_BUFFER ((u8*)0x14100000)
+#define LINEAR_BUFFER ((u8*)COE_LINEAR_BASE + 0x100000)
 #define PAYLOAD_VA (0x00101000)
 
 // handles

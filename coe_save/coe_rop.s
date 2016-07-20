@@ -9,14 +9,14 @@ rop:
     ; Read initial payload from savegame to linear
     FSUSER_OpenFileDirectly file_handle, 0, ARCHIVE_SAVEDATA, PATH_EMPTY, empty_string, 0x1, PATH_ASCII, payload_file, (payload_file_end - payload_file), FS_OPEN_READ, 0x0
     FSFILE_GetSize file_handle, payload_size
-    FSFILE_Read file_handle, payload_bytes_read, 0, 0, LINEAR_BUFFER+0x10000, payload_size
+    FSFILE_Read file_handle, payload_bytes_read, 0, 0, COE_LINEAR_BASE+0x10000, payload_size
     FSFILE_Close file_handle
 
     ; Flush to RAM
-    flush_dcache LINEAR_BUFFER, 0x00100000
+    flush_dcache COE_LINEAR_BASE, 0x00100000
 
     ; DMA payload
-    gspwn (COE_CODE_LINEAR_BASE + (PAYLOAD_VA - 0x00100000)), LINEAR_BUFFER+0x10000, 0x4000
+    gspwn (COE_CODE_LINEAR_BASE + (PAYLOAD_VA - 0x00100000)), COE_LINEAR_BASE+0x10000, 0x4000
     svcSleepThread 200*1000*1000, 0
 
     ; Jump to payload

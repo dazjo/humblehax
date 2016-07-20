@@ -63,8 +63,6 @@ l["COE_SAVE_NAME"] = "\"%s\"" % slot
 
 l["COE_SAVE_OUT"] = "\"build/" + path + "\""
 
-l["COE_CODE_LINEAR_BASE"] = "(0x14000000 + FIRM_SYSTEM_LINEAR_OFFSET - 0x00200000)"
-
 open(sys.argv[1]+".h","w").write(outputConstantsH(l))
 open(sys.argv[1]+".s","w").write(outputConstantsS(l))
 open(sys.argv[1]+".py","w").write(outputConstantsPY(l))
