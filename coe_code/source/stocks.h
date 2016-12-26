@@ -15,6 +15,7 @@ Result _srvGetServiceHandle(Handle* srvHandle, Handle* out, const char* name);
 
 Result gspwn(void* dst, void* src, u32 size);
 Result _GSPGPU_SetBufferSwap(Handle handle, u32 screenid, GSPGPU_FramebufferInfo framebufinfo);
+Result _GSPGPU_InvalidateDataCache(Handle* handle, u8* adr, u32 size);
 Result _FSUSER_OpenArchive(Handle* handle, FS_ArchiveStruct* archive);
 //Result _FSUSER_OpenFile(Handle* handle, Handle* out, FS_ArchiveStruct archive, FS_Path fileLowPath, u32 openflags, u32 attributes);
 //Result _FSUSER_OpenFileDirectly(Handle* handle, Handle* out, FS_ArchiveStruct archive, FS_Path fileLowPath, u32 openflags, u32 attributes);
@@ -26,7 +27,7 @@ Result _FSFILE_Close(Handle handle);
 Result _FSUSER_OpenArchive(Handle *handle, FS_ArchiveStruct *archive);
 Result _FSUSER_CloseArchive(Handle* handle, FS_ArchiveStruct* archive);
 Result _FSUSER_ControlArchive(Handle *handle, FS_ArchiveStruct archive, FS_ArchiveAction action, void* input, u32 inputSize, void* output, u32 outputSize);
-Result _FSUSER_FormatSaveData(Handle* handle, FS_Archive archiveId, FS_Path path, u32 blocks, u32 directories, u32 files, u32 directoryBuckets, u32 fileBuckets, bool duplicateData);
+Result _FSUSER_FormatSaveData(Handle* handle, u32 archiveId, FS_Path path, u32 blocks, u32 directories, u32 files, u32 directoryBuckets, u32 fileBuckets, bool duplicateData);
 FS_Path _fsMakePath(FS_PathType type, const void* path);
 
 Result _HTTPC_Initialize(Handle* handle);
@@ -43,5 +44,6 @@ Result _HTTPC_GetResponseHeader(Handle* handle, Handle contextHandle, char* name
 
 int _strlen(const char* str);
 void *memset(void * ptr, int value, size_t num);
+int _memcmp(void *str1, void *str2, size_t n);
 
 #endif

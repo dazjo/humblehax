@@ -91,7 +91,7 @@ downloadFail:
     return ret;
 }
 
-Result payload_update(u8* firmware_version)
+Result payload_update(u8* firmware_version, int other_paslr_shift)
 {
     u8* buffer = &LINEAR_BUFFER[0x00300000];
     size_t size = 0;
@@ -143,8 +143,8 @@ Result payload_update(u8* firmware_version)
 
     // copy payload to text
     ret = _GSPGPU_FlushDataCache(gspHandle, 0xFFFF8001, (u32*)buffer, (size + 0x1f) & ~0x1f);
-    ret = gspwn((void*)(COE_CODE_LINEAR_BASE + PAYLOAD_VA - 0x00100000), buffer, (size + 0x1f) & ~0x1f);
-    svcSleepThread(300*1000*1000);
+    ret = gspwn((void*)((*(u32*)0x1FF80030 == 6 ? COE_CODE_LINEAR_BASE_N3DS : COE_CODE_LINEAR_BASE_O3DS)) + other_paslr_shift, buffer, (size + 0x1f) & ~0x1f);
+    svcSleepThread(300 * 1000 * 1000);
 
     FS_ArchiveStruct save_archive = (FS_ArchiveStruct){ARCHIVE_SAVEDATA, (FS_Path){PATH_EMPTY, 1, (u8*)""}};
     ret = _FSUSER_OpenArchive(fsHandle, &save_archive);
@@ -171,31 +171,30 @@ Result payload_update(u8* firmware_version)
     return ret;
 }
 
-void _main()
+void _main(int paslr_shift)
 {
     Result ret = 0x0;
-
-    // ghetto dcache invalidation
-    // don't judge me
-    for(int j = 0; j < sizeof(u32); j++)
-        for(int i = 0; i < 0x01000000 / sizeof(u32); i += sizeof(u32))
-            LINEAR_BUFFER[i + j] ^= 0xDEADBABE;
+    int other_paslr_shift = 0xF00FF00F;
 
     // un-init DSP so killing citizens will work (lol)
     _DSPDSP_UnloadComponent(dspHandle);
     _DSPDSP_RegisterInterruptEvents(dspHandle, 0x0, 0x2, 0x2);
 
-    // kill gxlow InterruptReceiver thread
-    for(int i = 0; i < 7; i++)
-        ((vu32*)(COE_GSPGPU_INTERRUPT_RECEIVER_STRUCT+0x10))[i] = COE_SVC_EXITTHREAD;
+    // ghetto dcache invalidation
+    // don't judge me
+    for(int j = 0; j < sizeof(u32); j++)
+        for(int i = 0; i < 0x01000000 / sizeof(u32); i += sizeof(u32))
+            LINEAR_BUFFER[COE_CODEBIN_SIZE + i + j] ^= 0xDEADBABE;
 
-    // kill GameStateManager thread
-    *(vu8*)COE_GAMESTATEMANAGER_EXIT = 0;
-
-    // kill APT client thread
-    APT_FinalizeClientThread();
-
-    svcSleepThread(10000000);
+    // scan for otherapp destination
+    for(int i = 0; i < COE_CODEBIN_SIZE; i += 0x1000)
+    {
+        if(!_memcmp((void*)(COE_LINEAR_BASE + i), (void*)0x101000, 0x20))
+        {
+            other_paslr_shift = i;
+            break;
+        }
+    }
 
     // put framebuffers in linear mem so they're writable
     u8* top_framebuffer = &LINEAR_BUFFER[0x00100000];
@@ -210,7 +209,7 @@ void _main()
         u64 payload_size = 0;
         _FSFILE_GetSize(file, &payload_size);
 
-        u32* payload_buffer = (u32*)&LINEAR_BUFFER[0x00300000];
+        void* payload_buffer = (u32*)&LINEAR_BUFFER[0x00300000];
         u32 btx = 0;
         _FSFILE_Read(file, &btx, 0, payload_buffer, payload_size);
 
@@ -218,13 +217,18 @@ void _main()
 
         // copy payload to text
         ret = _GSPGPU_FlushDataCache(gspHandle, 0xFFFF8001, (u32*)payload_buffer, (payload_size + 0x1f) & ~0x1f);
-        ret = gspwn((void*)(COE_CODE_LINEAR_BASE + PAYLOAD_VA - 0x00100000), payload_buffer, (payload_size + 0x1f) & ~0x1f);
-        svcSleepThread(300*1000*1000);
+        ret = gspwn((void*)((*(u32*)0x1FF80030 == 6 ? COE_CODE_LINEAR_BASE_N3DS : COE_CODE_LINEAR_BASE_O3DS)) + other_paslr_shift, payload_buffer, (payload_size + 0x1f) & ~0x1f);
+        svcSleepThread(300 * 1000 * 1000);
     }
 
     if(ret || (padGet() & BUTTON_SELECT))
     {
         clearScreen();
+
+        char test_shift_buf[0x20];
+        char test_other_shift_buf[0x20];
+        hex2str(test_shift_buf, paslr_shift);
+        hex2str(test_other_shift_buf, other_paslr_shift);
 
         bool exiting = false;
         u8 state = 0;
@@ -240,6 +244,11 @@ void _main()
                     drawString(top_framebuffer, "Launch *hax payload", 40, 80);
                     drawString(top_framebuffer, "Update *hax payload", 40, 88);
                     drawString(top_framebuffer, "Clear savegame", 40, 96);
+
+                    drawString(low_framebuffer, "Menu offset:", 0, 0);
+                    drawString(low_framebuffer, test_shift_buf, 0, 8);
+                    drawString(low_framebuffer, "Payload offset:", 0, 24);
+                    drawString(low_framebuffer, test_other_shift_buf, 0, 32);
 
                     while(1)
                     {
@@ -282,12 +291,12 @@ void _main()
                         goto updateFail;
                     }
 
-                    firmware_version[0] = 0;
+                    firmware_version[0] = *(u32*)0x1FF80030 == 6 ? 1 : 0;
                     firmware_version[5] = 1;
-                    firmware_version[1] = 9;
+                    firmware_version[1] = 11;
                     firmware_version[2] = 0;
                     firmware_version[3] = 0;
-                    firmware_version[4] = 7;
+                    firmware_version[4] = 33;
 
                     while(1)
                     {
@@ -346,7 +355,7 @@ void _main()
                     drawStringColor(top_framebuffer, "                    ", 26*8, 56, 0x000000);
                     drawStringColor(top_framebuffer, "                    ", 26*8, 72, 0x000000);
 
-                    ret = payload_update(firmware_version);
+                    ret = payload_update(firmware_version, other_paslr_shift);
                     if(!ret)
                         centerString(top_framebuffer, "Successfully updated payload!", 96, 400);
                     else
@@ -397,12 +406,15 @@ updateFail:
                     state = 0;
                     break;
             }
-
+            _GSPGPU_FlushDataCache(gspHandle, 0xFFFF8001, (u32*)&LINEAR_BUFFER[0x00100000], 0x100000);
 
             if(exiting)
                 break;
         }
     }
+
+    // Invalidate otherapp area before jumping
+    ret = _GSPGPU_InvalidateDataCache(gspHandle, (void*)0x00101000, 0xC000);
 
     // run payload
     {

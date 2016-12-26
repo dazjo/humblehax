@@ -38,11 +38,6 @@ for a in sys.argv[2:]:
         if len(s) > 0:
             l.update(ast.literal_eval(s))
 
-if "FIRM_VERSION" in l and l["FIRM_VERSION"] == "NEW":
-    l["FIRM_SYSTEM_LINEAR_OFFSET"] = "0x07C00000"
-else:
-    l["FIRM_SYSTEM_LINEAR_OFFSET"] = "0x04000000"
-
 path = "Autosave.xml"
 slot = "Autosave"
 

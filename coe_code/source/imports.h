@@ -24,6 +24,5 @@ static Result (* const _FSUSER_OpenFile)(Handle* handle, Handle* fileHandle, u32
 static Result (* const _FSUSER_ReadFile)(Handle* handle, u32* bytesRead, s64 offset, void *buffer, u32 size) = (void*)COE_FSFILE_READ;
 static Result (* const _DSPDSP_UnloadComponent)(Handle* handle) = (void*)COE_DSPDSP_UNLOADCOMPONENT;
 static Result (* const _DSPDSP_RegisterInterruptEvents)(Handle* handle, Handle event, u32 type, u32 port) = (void*)COE_DSPDSP_REGISTERINTERRUPTEVENTS;
-static void (* const APT_FinalizeClientThread)() = (void*)COE_APT_FINALIZECLIENTTHREAD;
 
 #endif

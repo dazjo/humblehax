@@ -9,6 +9,18 @@
 #include "imports.h"
 #include "stocks.h"
 
+int _memcmp(void *str1, void *str2, size_t n)
+{
+    for (; n--; str1++, str2++)
+    {
+        if (*(u8*)(str1) != *(u8*)(str2))
+        {
+            return (*(u8*)(str1)-*(u8*)(str2));
+        }
+    }
+    return 0;
+}
+
 void *memset(void * ptr, int value, size_t num)
 {
     u8 *p = ptr;
@@ -59,6 +71,22 @@ Result gspwn(void* dst, void* src, u32 size)
     };
 
     return _GSPGPU_GxTryEnqueue(sharedGspCmdBuf, gxCommand);
+}
+
+Result _GSPGPU_InvalidateDataCache(Handle* handle, u8* adr, u32 size)
+{
+    Result ret=0;
+    u32 *cmdbuf = getThreadCommandBuffer();
+
+    cmdbuf[0] = 0x00090082;
+    cmdbuf[1] = (u32)adr;
+    cmdbuf[2] = size;
+    cmdbuf[3] = 0;
+    cmdbuf[4] = 0xFFFF8001;
+
+    if((ret=svcSendSyncRequest(*handle)))return ret;
+
+    return cmdbuf[1];
 }
 
 Result _srvGetServiceHandle(Handle* srvHandle, Handle* out, const char* name)
@@ -296,7 +324,7 @@ Result _FSUSER_ControlArchive(Handle *handle, FS_ArchiveStruct archive, FS_Archi
     return cmdbuf[1];
 }
 
-Result _FSUSER_FormatSaveData(Handle* handle, FS_Archive archiveId, FS_Path path, u32 blocks, u32 directories, u32 files, u32 directoryBuckets, u32 fileBuckets, bool duplicateData)
+Result _FSUSER_FormatSaveData(Handle* handle, u32 archiveId, FS_Path path, u32 blocks, u32 directories, u32 files, u32 directoryBuckets, u32 fileBuckets, bool duplicateData)
 {
     u32 *cmdbuf = getThreadCommandBuffer();
 
